@@ -1,0 +1,246 @@
+.dash-wrap {
+  padding: 14px;
+  padding-bottom: 40px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.dash-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.dash-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #16284b;
+  color: #f7c90c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 19px;
+}
+
+.dash-greet {
+  color: #16284b;
+  padding: 2px 0 14px;
+}
+
+.dash-week-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.dash-weeks {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.dash-weeks::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.dash-week {
+  min-width: 44px;
+  height: 38px;
+  border-radius: 12px;
+  border: none;
+  background: #fff;
+  color: #16284b;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(22, 40, 75, 0.06);
+  font-size: 15px;
+  flex-shrink: 0;
+  transition: transform 0.12s;
+}
+
+.dash-week.active {
+  background: #16284b;
+  color: #f7c90c;
+  transform: scale(1.05);
+}
+
+.dash-hero {
+  background: #16284b;
+  color: #fff;
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.dash-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -30%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(247, 201, 12, 0.08) 40%,
+    rgba(247, 201, 12, 0.18) 50%,
+    rgba(247, 201, 12, 0.08) 60%,
+    transparent 100%
+  );
+  animation: shine 6s ease-in-out infinite;
+}
+
+@keyframes shine {
+  0%,
+  100% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(300%);
+  }
+}
+
+.dash-ring {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+}
+.dash-ring-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.dash-mini-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.dash-mini {
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px 8px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(22, 40, 75, 0.05);
+}
+
+.dash-mini-val {
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.dash-mini-lbl {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.dash-last-test {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 16px;
+  color: #fff;
+  margin-bottom: 18px;
+  text-decoration: none;
+  transition: transform 0.1s;
+}
+
+.dash-last-test:active {
+  transform: scale(0.98);
+}
+
+.dash-last-test-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.dash-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 160px;
+  padding: 14px;
+  border-radius: 18px;
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform 0.12s;
+}
+
+.dash-tile:active {
+  transform: scale(0.98);
+}
+
+.dash-tile-shine {
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.16),
+    transparent
+  );
+  transform: rotate(25deg);
+  pointer-events: none;
+  animation: tile-shine 8s ease-in-out infinite;
+}
+
+@keyframes tile-shine {
+  0%, 100% { transform: translateX(0) rotate(25deg); }
+  50% { transform: translateX(500%) rotate(25deg); }
+}
+
+.dash-tile-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 360px) {
+  .dash-mini-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
