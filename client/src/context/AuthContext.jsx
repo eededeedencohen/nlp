@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import api from "../services/api";
+import { login as loginApi } from "../services/userService";
 
 const AuthContext = createContext(null);
 const STORAGE_KEY = "currentUser";
@@ -19,22 +19,19 @@ export const AuthProvider = ({ children }) => {
     else localStorage.removeItem(STORAGE_KEY);
   }, [currentUser]);
 
-  const loginAdmin = async () => {
-    const { data } = await api.post("/users/login/admin");
-    setCurrentUser(data);
-    return data;
-  };
-
-  const loginUser = async (userId) => {
-    const { data } = await api.post("/users/login/user", { userId });
+  const login = async (email, password) => {
+    const data = await loginApi(email, password);
     setCurrentUser(data);
     return data;
   };
 
   const logout = () => setCurrentUser(null);
 
+  const updateCurrent = (patch) =>
+    setCurrentUser((u) => (u ? { ...u, ...patch } : u));
+
   return (
-    <AuthContext.Provider value={{ currentUser, loginAdmin, loginUser, logout }}>
+    <AuthContext.Provider value={{ currentUser, login, logout, updateCurrent }}>
       {children}
     </AuthContext.Provider>
   );

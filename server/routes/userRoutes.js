@@ -6,12 +6,12 @@ const {
   createUser,
   updateUser,
   deleteUser,
-  loginAdmin,
-  loginUser,
+  login,
+  changePassword,
 } = require("../controllers/userController");
 
-router.post("/login/admin", loginAdmin);
-router.post("/login/user", loginUser);
+router.post("/login", login);
+router.post("/:id/change-password", changePassword);
 
 router.route("/").get(getUsers).post(createUser);
 router.route("/:id").get(getUserById).put(updateUser).delete(deleteUser);

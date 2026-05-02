@@ -156,7 +156,24 @@ function LearnDashboard() {
 
       <div className="dash-greet">
         <div style={{ fontSize: 13, opacity: 0.7 }}>שלום,</div>
-        <div style={{ fontSize: 22, fontWeight: 800 }}>{currentUser?.name}</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 800 }}>{currentUser?.name}</div>
+          <Link
+            to="/learn/password"
+            style={{
+              fontSize: 12,
+              color: "#16284b",
+              textDecoration: "none",
+              fontWeight: 700,
+              background: "#fff",
+              padding: "5px 12px",
+              borderRadius: 999,
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            החלף סיסמה
+          </Link>
+        </div>
       </div>
 
       <div className="dash-week-row">

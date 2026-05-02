@@ -12,6 +12,7 @@ import Cards from "./pages/Cards";
 import TestQuestions from "./pages/TestQuestions";
 
 import LearnDashboard from "./pages/LearnDashboard";
+import ChangePassword from "./pages/ChangePassword";
 import LearnCards from "./pages/LearnCards";
 import LearnTest from "./pages/LearnTest";
 import LearnInfographics from "./pages/LearnInfographics";
@@ -91,6 +92,14 @@ function Routing() {
         element={
           <RequireRole role="user">
             <LearnDashboard />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/learn/password"
+        element={
+          <RequireRole role="user">
+            <ChangePassword />
           </RequireRole>
         }
       />

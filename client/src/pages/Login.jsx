@@ -1,44 +1,31 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getUsers } from "../services/userService";
 import Logo from "../components/Logo";
 
 function Login() {
-  const [mode, setMode] = useState(null);
-  const [users, setUsers] = useState([]);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { loginAdmin, loginUser } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (mode === "user") {
-      setLoading(true);
-      getUsers()
-        .then((all) => setUsers(all.filter((u) => u.role === "user")))
-        .catch((e) => setError(e.message))
-        .finally(() => setLoading(false));
-    }
-  }, [mode]);
-
-  const handleAdmin = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setError("");
-    try {
-      await loginAdmin();
-      navigate("/admin");
-    } catch (e) {
-      setError(e?.response?.data?.message || e.message);
+    if (!email.trim() || !password) {
+      setError("נא להזין אימייל וסיסמה");
+      return;
     }
-  };
-
-  const handleUser = async (userId) => {
-    setError("");
+    setLoading(true);
     try {
-      await loginUser(userId);
-      navigate("/learn");
+      const user = await login(email.trim(), password);
+      navigate(user.role === "admin" ? "/admin" : "/learn");
     } catch (e) {
-      setError(e?.response?.data?.message || e.message);
+      setError(e?.response?.data?.message || "שגיאה בהתחברות");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,53 +38,39 @@ function Login() {
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
             <Logo variant="logo" size={88} />
           </div>
-          <p style={subtitle}>ברוכים הבאים! בחרו איך להתחבר</p>
+          <p style={subtitle}>ברוכים הבאים! הזינו את פרטי ההתחברות</p>
         </div>
 
-        {!mode && (
-          <div style={{ display: "grid", gap: 12 }}>
-            <button style={bigBtn("var(--brand)", "#fff")} onClick={() => setMode("user")}>
-              כניסה כמשתמש
-            </button>
-            <button style={bigBtn("var(--accent)", "var(--brand)")} onClick={() => setMode("admin")}>
-              כניסה כמנהל
-            </button>
-          </div>
-        )}
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
+          <label style={label}>
+            אימייל
+            <input
+              type="email"
+              autoComplete="email"
+              dir="ltr"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={input}
+              placeholder="name@example.com"
+            />
+          </label>
+          <label style={label}>
+            סיסמה
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={input}
+              placeholder="••••••••"
+            />
+          </label>
+          <button type="submit" style={submitBtn} disabled={loading}>
+            {loading ? "מתחבר..." : "כניסה"}
+          </button>
+        </form>
 
-        {mode === "admin" && (
-          <div style={{ display: "grid", gap: 12 }}>
-            <p>כניסה ישירה לחשבון המנהל</p>
-            <button style={bigBtn("var(--brand)", "#fff")} onClick={handleAdmin}>
-              המשך כמנהל
-            </button>
-            <button style={linkBtn} onClick={() => setMode(null)}>
-              חזרה
-            </button>
-          </div>
-        )}
-
-        {mode === "user" && (
-          <div style={{ display: "grid", gap: 10 }}>
-            <p>בחרו את המשתמש שלכם:</p>
-            {loading ? (
-              <p>טוען...</p>
-            ) : users.length === 0 ? (
-              <p style={{ color: "#888" }}>אין משתמשים עדיין. פנו למנהל.</p>
-            ) : (
-              users.map((u) => (
-                <button key={u._id} style={userBtn} onClick={() => handleUser(u._id)}>
-                  {u.name}
-                </button>
-              ))
-            )}
-            <button style={linkBtn} onClick={() => setMode(null)}>
-              חזרה
-            </button>
-          </div>
-        )}
-
-        {error && <p style={{ color: "#e4572e", marginTop: 12 }}>{error}</p>}
+        {error && <p style={{ color: "#e4572e", marginTop: 12, textAlign: "center" }}>{error}</p>}
       </div>
     </div>
   );
@@ -149,40 +122,37 @@ const inner = {
 };
 
 const brand = { textAlign: "center", marginBottom: 24 };
-
 const subtitle = { margin: 0, color: "#6b7280", fontSize: 14, textAlign: "center" };
 
-const bigBtn = (bg, color) => ({
+const label = {
+  display: "grid",
+  gap: 6,
+  fontSize: 13,
+  fontWeight: 700,
+  color: "#16284b",
+};
+
+const input = {
+  width: "100%",
+  padding: "12px 14px",
+  border: "1px solid #e5e7eb",
+  borderRadius: 12,
+  fontSize: 15,
+  fontFamily: "inherit",
+  background: "#f5f6fa",
+  outline: "none",
+};
+
+const submitBtn = {
   padding: "14px 18px",
-  background: bg,
-  color,
+  background: "#16284b",
+  color: "#f7c90c",
   border: "none",
   borderRadius: 12,
   fontSize: 16,
   fontWeight: 700,
   cursor: "pointer",
-  boxShadow: "0 6px 16px rgba(22,40,75,0.2)",
-});
-
-const userBtn = {
-  padding: "14px 18px",
-  background: "#f5f6fa",
-  color: "#16284b",
-  border: "1px solid #e5e7eb",
-  borderRadius: 12,
-  fontSize: 16,
-  fontWeight: 600,
-  cursor: "pointer",
-  textAlign: "center",
-};
-
-const linkBtn = {
-  background: "transparent",
-  border: "none",
-  color: "#16284b",
-  cursor: "pointer",
-  fontSize: 14,
-  padding: 6,
+  marginTop: 6,
 };
 
 export default Login;

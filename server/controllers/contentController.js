@@ -1,5 +1,7 @@
 const fs = require("fs");
 const path = require("path");
+const Infographic = require("../models/Infographic");
+const Presentation = require("../models/Presentation");
 
 const UPLOADS = path.join(__dirname, "..", "uploads");
 
@@ -13,17 +15,9 @@ function readJson(file, fallback) {
   }
 }
 
-function writeJson(file, data) {
-  fs.writeFileSync(path.join(UPLOADS, file), JSON.stringify(data, null, 2), "utf8");
-}
-
 function getNestedWeek(data, week) {
   if (!data) return {};
   return data[`week${week}`] || {};
-}
-
-function ensureDir(dir) {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
 function decodeBase64(dataUrl) {
@@ -39,7 +33,7 @@ function sanitizeName(name) {
     .slice(0, 120);
 }
 
-// ===== Card/test JSON text =====
+// ===== Cards/Tests text JSON =====
 exports.getCardsData = (req, res) => {
   const week = Number(req.query.week) || 1;
   const data = readJson("cards.json", {});
@@ -52,123 +46,170 @@ exports.getTestQuestions = (req, res) => {
   res.json(getNestedWeek(data, week));
 };
 
-// ===== Infographics =====
-exports.listInfographics = (req, res) => {
-  const week = Number(req.query.week) || 1;
-  const dir = path.join(UPLOADS, "infographics", `week${week}`);
-  if (!fs.existsSync(dir)) return res.json([]);
-  const files = fs
-    .readdirSync(dir)
-    .filter((f) => /\.(png|jpe?g|gif|webp)$/i.test(f))
-    .sort((a, b) => {
-      const na = parseInt((a.match(/\d+/) || [0])[0], 10);
-      const nb = parseInt((b.match(/\d+/) || [0])[0], 10);
-      return na - nb;
-    })
-    .map((f) => ({
-      name: f,
-      url: `/uploads/infographics/week${week}/${f}`,
-      week,
-    }));
-  res.json(files);
-};
-
-exports.uploadInfographic = (req, res) => {
-  const { file, filename, week = 1 } = req.body;
-  const decoded = decodeBase64(file);
-  if (!decoded) return res.status(400).json({ error: "Invalid file (expected data URL)" });
-  if (!/^image\//.test(decoded.mime)) {
-    return res.status(400).json({ error: "Only image files are allowed" });
+// ===== Infographics (MongoDB) =====
+exports.listInfographics = async (req, res) => {
+  try {
+    const week = Number(req.query.week) || 1;
+    const docs = await Infographic.find({ week })
+      .select("-data")
+      .sort({ name: 1 });
+    res.json(
+      docs.map((d) => ({
+        id: d._id,
+        name: d.name,
+        week: d.week,
+        url: `/api/content/infographics/${d._id}/file`,
+        mimeType: d.mimeType,
+        size: d.size,
+      }))
+    );
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-  const ext = (decoded.mime.split("/")[1] || "png").toLowerCase();
-  const base =
-    sanitizeName((filename || "").replace(/\.[^.]+$/, "")) || `infographic_${Date.now()}`;
-  const final = `${base}.${ext}`;
+};
 
-  const w = Number(week);
-  const dir = path.join(UPLOADS, "infographics", `week${w}`);
-  ensureDir(dir);
-
-  let target = path.join(dir, final);
-  let counter = 1;
-  while (fs.existsSync(target)) {
-    target = path.join(dir, `${base}_${counter}.${ext}`);
-    counter++;
+exports.streamInfographic = async (req, res) => {
+  try {
+    const doc = await Infographic.findById(req.params.id);
+    if (!doc) return res.status(404).end();
+    res.setHeader("Content-Type", doc.mimeType);
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.send(doc.data);
+  } catch (error) {
+    res.status(500).end();
   }
-  fs.writeFileSync(target, decoded.buf);
-  const savedName = path.basename(target);
-  res.status(201).json({
-    name: savedName,
-    week: w,
-    url: `/uploads/infographics/week${w}/${savedName}`,
-  });
 };
 
-exports.deleteInfographic = (req, res) => {
-  const week = Number(req.query.week) || 1;
-  const name = req.params.name;
-  const fp = path.join(UPLOADS, "infographics", `week${week}`, name);
-  if (!fs.existsSync(fp)) return res.status(404).json({ error: "Not found" });
-  fs.unlinkSync(fp);
-  res.json({ ok: true, name, week });
-};
-
-// ===== Presentations =====
-exports.listPresentations = (req, res) => {
-  const week = Number(req.query.week) || 1;
-  const dir = path.join(UPLOADS, "presentations", `week${week}`);
-  if (!fs.existsSync(dir)) return res.json([]);
-  const files = fs
-    .readdirSync(dir)
-    .filter((f) => /\.pdf$/i.test(f))
-    .map((f) => ({
-      name: f,
-      url: `/uploads/presentations/week${week}/${f}`,
-      week,
-    }));
-  res.json(files);
-};
-
-exports.uploadPresentation = (req, res) => {
-  const { file, filename, week = 1 } = req.body;
-  const decoded = decodeBase64(file);
-  if (!decoded) return res.status(400).json({ error: "Invalid file (expected data URL)" });
-  if (decoded.mime !== "application/pdf") {
-    return res.status(400).json({ error: "Only PDF files are allowed" });
+exports.uploadInfographic = async (req, res) => {
+  try {
+    const { file, filename, week = 1 } = req.body;
+    const decoded = decodeBase64(file);
+    if (!decoded) return res.status(400).json({ error: "Invalid file (expected data URL)" });
+    if (!/^image\//.test(decoded.mime)) {
+      return res.status(400).json({ error: "Only image files are allowed" });
+    }
+    const ext = (decoded.mime.split("/")[1] || "png").toLowerCase();
+    const base =
+      sanitizeName((filename || "").replace(/\.[^.]+$/, "")) ||
+      `infographic_${Date.now()}`;
+    let final = `${base}.${ext}`;
+    let counter = 1;
+    while (await Infographic.findOne({ week: Number(week), name: final })) {
+      final = `${base}_${counter}.${ext}`;
+      counter++;
+    }
+    const doc = await Infographic.create({
+      week: Number(week),
+      name: final,
+      mimeType: decoded.mime,
+      size: decoded.buf.length,
+      data: decoded.buf,
+    });
+    res.status(201).json({
+      id: doc._id,
+      name: doc.name,
+      week: doc.week,
+      url: `/api/content/infographics/${doc._id}/file`,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-  const base =
-    sanitizeName((filename || "").replace(/\.[^.]+$/, "")) || `presentation_${Date.now()}`;
-  const final = `${base}.pdf`;
+};
 
-  const w = Number(week);
-  const dir = path.join(UPLOADS, "presentations", `week${w}`);
-  ensureDir(dir);
-
-  let target = path.join(dir, final);
-  let counter = 1;
-  while (fs.existsSync(target)) {
-    target = path.join(dir, `${base}_${counter}.pdf`);
-    counter++;
+exports.deleteInfographic = async (req, res) => {
+  try {
+    const doc = await Infographic.findByIdAndDelete(req.params.id);
+    if (!doc) return res.status(404).json({ error: "Not found" });
+    res.json({ ok: true, id: req.params.id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-  fs.writeFileSync(target, decoded.buf);
-  const savedName = path.basename(target);
-  res.status(201).json({
-    name: savedName,
-    week: w,
-    url: `/uploads/presentations/week${w}/${savedName}`,
-  });
 };
 
-exports.deletePresentation = (req, res) => {
-  const week = Number(req.query.week) || 1;
-  const name = req.params.name;
-  const fp = path.join(UPLOADS, "presentations", `week${week}`, name);
-  if (!fs.existsSync(fp)) return res.status(404).json({ error: "Not found" });
-  fs.unlinkSync(fp);
-  res.json({ ok: true, name, week });
+// ===== Presentations (MongoDB) =====
+exports.listPresentations = async (req, res) => {
+  try {
+    const week = Number(req.query.week) || 1;
+    const docs = await Presentation.find({ week })
+      .select("-data")
+      .sort({ name: 1 });
+    res.json(
+      docs.map((d) => ({
+        id: d._id,
+        name: d.name,
+        week: d.week,
+        url: `/api/content/presentations/${d._id}/file`,
+        mimeType: d.mimeType,
+        size: d.size,
+      }))
+    );
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-// ===== Card & test images =====
+exports.streamPresentation = async (req, res) => {
+  try {
+    const doc = await Presentation.findById(req.params.id);
+    if (!doc) return res.status(404).end();
+    res.setHeader("Content-Type", doc.mimeType || "application/pdf");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${encodeURIComponent(doc.name)}"`
+    );
+    res.send(doc.data);
+  } catch (error) {
+    res.status(500).end();
+  }
+};
+
+exports.uploadPresentation = async (req, res) => {
+  try {
+    const { file, filename, week = 1 } = req.body;
+    const decoded = decodeBase64(file);
+    if (!decoded) return res.status(400).json({ error: "Invalid file (expected data URL)" });
+    if (decoded.mime !== "application/pdf") {
+      return res.status(400).json({ error: "Only PDF files are allowed" });
+    }
+    const base =
+      sanitizeName((filename || "").replace(/\.[^.]+$/, "")) ||
+      `presentation_${Date.now()}`;
+    let final = `${base}.pdf`;
+    let counter = 1;
+    while (await Presentation.findOne({ week: Number(week), name: final })) {
+      final = `${base}_${counter}.pdf`;
+      counter++;
+    }
+    const doc = await Presentation.create({
+      week: Number(week),
+      name: final,
+      mimeType: "application/pdf",
+      size: decoded.buf.length,
+      data: decoded.buf,
+    });
+    res.status(201).json({
+      id: doc._id,
+      name: doc.name,
+      week: doc.week,
+      url: `/api/content/presentations/${doc._id}/file`,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deletePresentation = async (req, res) => {
+  try {
+    const doc = await Presentation.findByIdAndDelete(req.params.id);
+    if (!doc) return res.status(404).json({ error: "Not found" });
+    res.json({ ok: true, id: req.params.id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// ===== Cards/Test images (filesystem) =====
 exports.listCardImages = (req, res) => {
   const week = Number(req.query.week) || 1;
   const dir = path.join(UPLOADS, "cards", `week${week}`);
@@ -206,28 +247,36 @@ exports.listTestImages = (req, res) => {
 };
 
 // ===== Weeks list =====
-exports.listWeeks = (req, res) => {
-  const cards = readJson("cards.json", {});
-  const tests = readJson("testQuestions.json", {});
-  const weeks = new Set();
+exports.listWeeks = async (req, res) => {
+  try {
+    const cards = readJson("cards.json", {});
+    const tests = readJson("testQuestions.json", {});
+    const weeks = new Set();
 
-  for (const k of Object.keys(cards)) {
-    const m = k.match(/^week(\d+)$/);
-    if (m) weeks.add(parseInt(m[1], 10));
-  }
-  for (const k of Object.keys(tests)) {
-    const m = k.match(/^week(\d+)$/);
-    if (m) weeks.add(parseInt(m[1], 10));
-  }
-  for (const sub of ["cards", "testQuestions", "infographics", "presentations"]) {
-    const root = path.join(UPLOADS, sub);
-    if (!fs.existsSync(root)) continue;
-    for (const entry of fs.readdirSync(root)) {
-      const m = entry.match(/^week(\d+)$/);
+    for (const k of Object.keys(cards)) {
+      const m = k.match(/^week(\d+)$/);
       if (m) weeks.add(parseInt(m[1], 10));
     }
-  }
+    for (const k of Object.keys(tests)) {
+      const m = k.match(/^week(\d+)$/);
+      if (m) weeks.add(parseInt(m[1], 10));
+    }
+    for (const sub of ["cards", "testQuestions"]) {
+      const root = path.join(UPLOADS, sub);
+      if (!fs.existsSync(root)) continue;
+      for (const entry of fs.readdirSync(root)) {
+        const m = entry.match(/^week(\d+)$/);
+        if (m) weeks.add(parseInt(m[1], 10));
+      }
+    }
+    const infoWeeks = await Infographic.distinct("week");
+    const presWeeks = await Presentation.distinct("week");
+    for (const w of infoWeeks) weeks.add(w);
+    for (const w of presWeeks) weeks.add(w);
 
-  if (weeks.size === 0) weeks.add(1);
-  res.json([...weeks].sort((a, b) => a - b));
+    if (weeks.size === 0) weeks.add(1);
+    res.json([...weeks].sort((a, b) => a - b));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

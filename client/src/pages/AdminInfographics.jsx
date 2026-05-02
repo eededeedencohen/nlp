@@ -69,11 +69,11 @@ function AdminInfographics() {
     }
   };
 
-  const handleDelete = async (name) => {
-    if (!window.confirm(`למחוק את ${name}?`)) return;
+  const handleDelete = async (item) => {
+    if (!window.confirm(`למחוק את ${item.name}?`)) return;
     try {
-      await deleteInfographic(name, week);
-      ok(`נמחק: ${name}`);
+      await deleteInfographic(item.id);
+      ok(`נמחק: ${item.name}`);
       await refresh(week);
     } catch (e) {
       err("שגיאה במחיקה: " + (e?.response?.data?.error || e.message));
@@ -139,7 +139,7 @@ function AdminInfographics() {
           >
             {items.map((img) => (
               <div
-                key={img.name}
+                key={img.id || img.name}
                 style={{
                   background: "#fff",
                   border: "1px solid #eef0f4",
@@ -173,7 +173,7 @@ function AdminInfographics() {
                   <button
                     className="admin-btn danger"
                     style={{ padding: "6px 12px", fontSize: 12, width: "100%" }}
-                    onClick={() => handleDelete(img.name)}
+                    onClick={() => handleDelete(img)}
                   >
                     מחק
                   </button>

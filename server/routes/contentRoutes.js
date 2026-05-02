@@ -10,10 +10,12 @@ router.get("/test-images", c.listTestImages);
 
 router.get("/infographics", c.listInfographics);
 router.post("/infographics", c.uploadInfographic);
-router.delete("/infographics/:name", c.deleteInfographic);
+router.get("/infographics/:id/file", c.streamInfographic);
+router.delete("/infographics/:id", c.deleteInfographic);
 
 router.get("/presentations", c.listPresentations);
 router.post("/presentations", c.uploadPresentation);
-router.delete("/presentations/:name", c.deletePresentation);
+router.get("/presentations/:id/file", c.streamPresentation);
+router.delete("/presentations/:id", c.deletePresentation);
 
 module.exports = router;

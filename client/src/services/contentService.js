@@ -23,9 +23,9 @@ export const uploadInfographic = (file, filename, week = 1) =>
     .post("/content/infographics", { file, filename, week })
     .then((r) => r.data);
 
-export const deleteInfographic = (name, week = 1) =>
+export const deleteInfographic = (id) =>
   api
-    .delete(`/content/infographics/${encodeURIComponent(name)}`, { params: { week } })
+    .delete(`/content/infographics/${id}`)
     .then((r) => r.data);
 
 export const uploadPresentation = (file, filename, week = 1) =>
@@ -33,9 +33,9 @@ export const uploadPresentation = (file, filename, week = 1) =>
     .post("/content/presentations", { file, filename, week })
     .then((r) => r.data);
 
-export const deletePresentation = (name, week = 1) =>
+export const deletePresentation = (id) =>
   api
-    .delete(`/content/presentations/${encodeURIComponent(name)}`, { params: { week } })
+    .delete(`/content/presentations/${id}`)
     .then((r) => r.data);
 export const getCardImages = () =>
   api.get("/content/card-images").then((r) =>

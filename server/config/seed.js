@@ -4,26 +4,42 @@ async function dropLegacyIndexes() {
   try {
     const indexes = await User.collection.indexes();
     for (const idx of indexes) {
-      if (idx.name === "email_1") {
-        await User.collection.dropIndex("email_1");
-        console.log("✓ Dropped legacy email index");
+      // Old unique index on name (we now use email as unique)
+      if (idx.name === "name_1") {
+        await User.collection.dropIndex("name_1");
+        console.log("✓ Dropped legacy name index");
       }
     }
   } catch (e) {
-    // collection might not exist yet
+    // ignore
   }
 }
 
 async function seedDefaults() {
   await dropLegacyIndexes();
-  const admin = await User.findOne({ role: "admin" });
+
+  // Admin
+  const adminEmail = "eden95cohen@gmail.com";
+  const admin = await User.findOne({ email: adminEmail });
   if (!admin) {
-    await User.create({ name: "מנהל", role: "admin" });
-    console.log("✅ Seeded admin user");
+    await User.create({
+      name: "מנהל",
+      email: adminEmail,
+      passwordHash: await User.hashPassword("123!@#"),
+      role: "admin",
+    });
+    console.log("✅ Seeded admin user (" + adminEmail + ")");
   }
-  const users = await User.countDocuments({ role: "user" });
-  if (users === 0) {
-    await User.create({ name: "משתמש ראשון", role: "user" });
+
+  // Default user (only if no regular users exist)
+  const userCount = await User.countDocuments({ role: "user" });
+  if (userCount === 0) {
+    await User.create({
+      name: "משתמש ראשון",
+      email: "user@nlp.local",
+      passwordHash: await User.hashPassword("changeme"),
+      role: "user",
+    });
     console.log("✅ Seeded default user");
   }
 }

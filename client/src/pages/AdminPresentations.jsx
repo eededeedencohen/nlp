@@ -79,11 +79,11 @@ function AdminPresentations() {
     }
   };
 
-  const handleDelete = async (name) => {
-    if (!window.confirm(`למחוק את ${name}?`)) return;
+  const handleDelete = async (item) => {
+    if (!window.confirm(`למחוק את ${item.name}?`)) return;
     try {
-      await deletePresentation(name, week);
-      ok(`נמחק: ${name}`);
+      await deletePresentation(item.id);
+      ok(`נמחק: ${item.name}`);
       await refresh(week);
     } catch (e) {
       err("שגיאה במחיקה: " + (e?.response?.data?.error || e.message));
@@ -142,7 +142,7 @@ function AdminPresentations() {
         ) : (
           <div className="admin-list">
             {items.map((p) => (
-              <div key={p.name} className="admin-list-row">
+              <div key={p.id || p.name} className="admin-list-row">
                 <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                   <div
                     style={{
@@ -183,7 +183,7 @@ function AdminPresentations() {
                 <button
                   className="admin-btn danger"
                   style={{ padding: "7px 14px", fontSize: 13 }}
-                  onClick={() => handleDelete(p.name)}
+                  onClick={() => handleDelete(p)}
                 >
                   מחק
                 </button>
