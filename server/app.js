@@ -19,12 +19,18 @@ app.use("/api/content", require("./routes/contentRoutes"));
 app.use("/api/comments", require("./routes/commentRoutes"));
 
 // Serve built client (SPA). Falls back to index.html for any non-API route.
-const clientDist = path.join(__dirname, "..", "client", "dist");
-if (fs.existsSync(clientDist)) {
+// Prefer server/dist (local deploy workflow); fall back to client/dist (CI build).
+const candidates = [
+  path.join(__dirname, "dist"),
+  path.join(__dirname, "..", "client", "dist"),
+];
+const clientDist = candidates.find((p) => fs.existsSync(p));
+if (clientDist) {
   app.use(express.static(clientDist));
   app.get(/^(?!\/api|\/uploads).*/, (req, res) => {
     res.sendFile(path.join(clientDist, "index.html"));
   });
+  console.log(`Serving client from: ${clientDist}`);
 } else {
   app.get("/", (req, res) => {
     res.json({ message: "Shekel API is running (no built client found)" });
