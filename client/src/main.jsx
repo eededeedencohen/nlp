@@ -6,13 +6,16 @@ import "./App.css";
 import App from "./App";
 import { UserContextProvider } from "./context/UserContext";
 import { AuthProvider } from "./context/AuthContext";
+import { ContentProvider } from "./context/ContentContext";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <UserContextProvider>
-          <App />
+          <ContentProvider>
+            <App />
+          </ContentProvider>
         </UserContextProvider>
       </AuthProvider>
     </BrowserRouter>

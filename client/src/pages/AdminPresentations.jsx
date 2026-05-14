@@ -4,6 +4,7 @@ import {
   uploadPresentation,
   deletePresentation,
 } from "../services/contentService";
+import { useContent } from "../context/ContentContext";
 import "./Admin.css";
 
 function fileToDataUrl(file) {
@@ -29,6 +30,7 @@ function AdminPresentations() {
   const [status, setStatus] = useState("");
   const [statusType, setStatusType] = useState("ok");
   const fileRef = useRef(null);
+  const { invalidate, invalidateWeeks } = useContent();
 
   const refresh = async (w = week) => {
     setLoading(true);
@@ -70,6 +72,8 @@ function AdminPresentations() {
         uploaded++;
       }
       if (uploaded > 0) ok(`הועלו ${uploaded} מצגות לשבוע ${week}`);
+      invalidate("presentations", week);
+      invalidateWeeks();
       await refresh(week);
     } catch (e) {
       err("שגיאה בהעלאה: " + (e?.response?.data?.error || e.message));
@@ -84,6 +88,7 @@ function AdminPresentations() {
     try {
       await deletePresentation(item.id);
       ok(`נמחק: ${item.name}`);
+      invalidate("presentations", week);
       await refresh(week);
     } catch (e) {
       err("שגיאה במחיקה: " + (e?.response?.data?.error || e.message));

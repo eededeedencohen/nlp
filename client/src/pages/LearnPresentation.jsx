@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { getPresentations } from "../services/contentService";
+import { useContent } from "../context/ContentContext";
 import Icon from "../components/Icon";
 import PinchZoom from "../components/PinchZoom/PinchZoom";
 
@@ -16,6 +16,7 @@ function LearnPresentation() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const week = params.get("week") ? Number(params.get("week")) : 1;
+  const { ensurePresentations } = useContent();
 
   const [presentations, setPresentations] = useState([]);
   const [active, setActive] = useState(null);
@@ -24,11 +25,11 @@ function LearnPresentation() {
   const [pageWidth, setPageWidth] = useState(Math.min(window.innerWidth - 20, 900));
 
   useEffect(() => {
-    getPresentations(week).then((list) => {
+    ensurePresentations(week).then((list) => {
       setPresentations(list);
       if (list.length === 1) setActive(list[0]);
     });
-  }, [week]);
+  }, [week, ensurePresentations]);
 
   useEffect(() => {
     setPageIndex(0);

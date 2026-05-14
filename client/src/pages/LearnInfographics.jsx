@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { getInfographics } from "../services/contentService";
+import { useContent } from "../context/ContentContext";
 import Icon from "../components/Icon";
 import PinchZoom from "../components/PinchZoom/PinchZoom";
 
@@ -8,6 +8,7 @@ function LearnInfographics() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const week = params.get("week") ? Number(params.get("week")) : 1;
+  const { ensureInfographics } = useContent();
 
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,10 +16,10 @@ function LearnInfographics() {
 
   useEffect(() => {
     setLoading(true);
-    getInfographics(week)
+    ensureInfographics(week)
       .then(setImages)
       .finally(() => setLoading(false));
-  }, [week]);
+  }, [week, ensureInfographics]);
 
   const close = () => setOpened(null);
   const goNext = () => setOpened((i) => (i < images.length - 1 ? i + 1 : i));

@@ -3,13 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Icon from "../components/Icon";
 import Logo from "../components/Logo";
-import {
-  getCardsData,
-  getTestQuestionsData,
-  getInfographics,
-  getPresentations,
-  getWeeks,
-} from "../services/contentService";
+import { useContent } from "../context/ContentContext";
 import { getMyCardProgress } from "../services/progressService";
 import { getUserAttempts } from "../services/attemptService";
 import "./LearnDashboard.css";
@@ -59,13 +53,28 @@ function LearnDashboard() {
     const saved = localStorage.getItem("selectedWeek");
     return saved ? Number(saved) : 1;
   });
-  const [weeks, setWeeks] = useState([1]);
+  const {
+    weeks: cachedWeeks,
+    ensureWeeks,
+    ensureCards,
+    ensureTests,
+    ensureInfographics,
+    ensurePresentations,
+  } = useContent();
+  const weeks = cachedWeeks || [1];
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getWeeks().then((ws) => setWeeks(ws?.length ? ws : [1]));
-  }, []);
+    ensureWeeks();
+  }, [ensureWeeks]);
+
+  // If the saved week isn't among available weeks, snap to the first available one
+  useEffect(() => {
+    if (cachedWeeks && cachedWeeks.length > 0 && !cachedWeeks.includes(selectedWeek)) {
+      setSelectedWeek(cachedWeeks[0]);
+    }
+  }, [cachedWeeks, selectedWeek]);
 
   useEffect(() => {
     localStorage.setItem("selectedWeek", String(selectedWeek));
@@ -76,10 +85,10 @@ function LearnDashboard() {
     setLoading(true);
     (async () => {
       const [cards, qs, info, pres, progress, attempts] = await Promise.all([
-        getCardsData(selectedWeek),
-        getTestQuestionsData(selectedWeek),
-        getInfographics(selectedWeek),
-        getPresentations(selectedWeek),
+        ensureCards(selectedWeek),
+        ensureTests(selectedWeek),
+        ensureInfographics(selectedWeek),
+        ensurePresentations(selectedWeek),
         getMyCardProgress(currentUser._id, selectedWeek),
         getUserAttempts(currentUser._id, selectedWeek),
       ]);
@@ -128,7 +137,7 @@ function LearnDashboard() {
     return () => {
       cancel = true;
     };
-  }, [currentUser, selectedWeek]);
+  }, [currentUser, selectedWeek, ensureCards, ensureTests, ensureInfographics, ensurePresentations]);
 
   const masteryPct = useMemo(() => {
     if (!stats || !stats.cardsTotal) return 0;

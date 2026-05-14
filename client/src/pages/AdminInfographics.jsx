@@ -4,6 +4,7 @@ import {
   uploadInfographic,
   deleteInfographic,
 } from "../services/contentService";
+import { useContent } from "../context/ContentContext";
 import "./Admin.css";
 
 function fileToDataUrl(file) {
@@ -23,6 +24,7 @@ function AdminInfographics() {
   const [status, setStatus] = useState("");
   const [statusType, setStatusType] = useState("ok");
   const fileRef = useRef(null);
+  const { invalidate, invalidateWeeks } = useContent();
 
   const refresh = async (w = week) => {
     setLoading(true);
@@ -60,6 +62,8 @@ function AdminInfographics() {
         uploaded++;
       }
       ok(`הועלו ${uploaded} אינפוגרפיות לשבוע ${week}`);
+      invalidate("infographics", week);
+      invalidateWeeks();
       await refresh(week);
     } catch (e) {
       err("שגיאה בהעלאה: " + (e?.response?.data?.error || e.message));
@@ -74,6 +78,7 @@ function AdminInfographics() {
     try {
       await deleteInfographic(item.id);
       ok(`נמחק: ${item.name}`);
+      invalidate("infographics", week);
       await refresh(week);
     } catch (e) {
       err("שגיאה במחיקה: " + (e?.response?.data?.error || e.message));

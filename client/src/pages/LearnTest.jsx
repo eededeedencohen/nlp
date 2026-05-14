@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getTestQuestionsData } from "../services/contentService";
+import { useContent } from "../context/ContentContext";
 import {
   startAttempt,
   completeAttempt,
@@ -15,6 +15,7 @@ import CommentsModal from "../components/CommentsModal";
 
 function LearnTest() {
   const { currentUser } = useAuth();
+  const { ensureTests } = useContent();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const week = params.get("week") ? Number(params.get("week")) : 1;
@@ -31,7 +32,7 @@ function LearnTest() {
 
   useEffect(() => {
     (async () => {
-      const data = await getTestQuestionsData(week);
+      const data = await ensureTests(week);
       const entries = Object.entries(data)
         .map(([key, val]) => ({ number: parseInt(key.replace(/\D/g, ""), 10), ...val }))
         .sort((a, b) => a.number - b.number);
@@ -40,7 +41,7 @@ function LearnTest() {
       setPastAttempts(past);
       setPhase("intro");
     })();
-  }, [currentUser, week]);
+  }, [currentUser, week, ensureTests]);
 
   const q = questions[index];
 

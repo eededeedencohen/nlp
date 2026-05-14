@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getCardsData } from "../services/contentService";
+import { useContent } from "../context/ContentContext";
 import {
   getMyCardProgress,
   setCardStatus,
@@ -14,6 +14,7 @@ import "./LearnCards.css";
 
 function LearnCards() {
   const { currentUser } = useAuth();
+  const { ensureCards } = useContent();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const week = params.get("week") ? Number(params.get("week")) : 1;
@@ -37,7 +38,7 @@ function LearnCards() {
       setLoading(true);
       try {
         const [data, prog] = await Promise.all([
-          getCardsData(week),
+          ensureCards(week),
           getMyCardProgress(currentUser._id, week),
         ]);
         const entries = Object.entries(data).map(([key, val]) => {
@@ -51,7 +52,7 @@ function LearnCards() {
         setLoading(false);
       }
     })();
-  }, [currentUser, week]);
+  }, [currentUser, week, ensureCards]);
 
   const filtered = useMemo(() => {
     if (filter === "all") return cards;
