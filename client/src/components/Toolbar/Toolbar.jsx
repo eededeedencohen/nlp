@@ -25,8 +25,6 @@ function Toolbar({ variant }) {
           <>
             <Link to="/admin"><Icon name="home" size={16} /> דאשבורד</Link>
             <Link to="/admin/users">משתמשים</Link>
-            <Link to="/admin/cards">כרטיסיות</Link>
-            <Link to="/admin/test-questions">שאלות מבחן</Link>
             <Link to="/admin/infographics">אינפוגרפיות</Link>
             <Link to="/admin/presentations">מצגות</Link>
             <Link to="/admin/attempts">ניסיונות</Link>

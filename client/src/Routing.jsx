@@ -8,8 +8,6 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminAttempts from "./pages/AdminAttempts";
 import AdminInfographics from "./pages/AdminInfographics";
 import AdminPresentations from "./pages/AdminPresentations";
-import Cards from "./pages/Cards";
-import TestQuestions from "./pages/TestQuestions";
 
 import LearnDashboard from "./pages/LearnDashboard";
 import ChangePassword from "./pages/ChangePassword";
@@ -51,22 +49,6 @@ function Routing() {
         element={
           <RequireRole role="admin">
             <AdminAttempts />
-          </RequireRole>
-        }
-      />
-      <Route
-        path="/admin/cards"
-        element={
-          <RequireRole role="admin">
-            <Cards />
-          </RequireRole>
-        }
-      />
-      <Route
-        path="/admin/test-questions"
-        element={
-          <RequireRole role="admin">
-            <TestQuestions />
           </RequireRole>
         }
       />

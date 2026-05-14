@@ -3,8 +3,6 @@ import "./Admin.css";
 
 const tiles = [
   { to: "/admin/users", title: "משתמשים", desc: "ניהול משתמשי המערכת", icon: "👥" },
-  { to: "/admin/cards", title: "כרטיסיות", desc: "העלאת זוגות לצד קדמי/אחורי", icon: "🎴" },
-  { to: "/admin/test-questions", title: "שאלות מבחן", desc: "העלאת תמונות שאלות", icon: "📝" },
   { to: "/admin/infographics", title: "אינפוגרפיות", desc: "העלאת תמונות אינפוגרפיקה", icon: "🖼️" },
   { to: "/admin/presentations", title: "מצגות", desc: "העלאת קבצי PDF", icon: "📖" },
   { to: "/admin/attempts", title: "ניסיונות מבחן", desc: "מעקב אחרי ביצועי משתמשים", icon: "📊" },
