@@ -6,7 +6,9 @@ router.get("/weeks", c.listWeeks);
 router.get("/cards-data", c.getCardsData);
 router.get("/test-questions-data", c.getTestQuestions);
 router.get("/card-images", c.listCardImages);
+router.get("/cards/:week/:number/:side", c.streamCardImage);
 router.get("/test-images", c.listTestImages);
+router.get("/test-images/:week/:number", c.streamTestImage);
 
 router.get("/infographics", c.listInfographics);
 router.post("/infographics", c.uploadInfographic);

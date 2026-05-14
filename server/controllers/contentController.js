@@ -1,24 +1,7 @@
-const fs = require("fs");
-const path = require("path");
 const Infographic = require("../models/Infographic");
 const Presentation = require("../models/Presentation");
-
-const UPLOADS = path.join(__dirname, "..", "uploads");
-
-function readJson(file, fallback) {
-  const p = path.join(UPLOADS, file);
-  if (!fs.existsSync(p)) return fallback;
-  try {
-    return JSON.parse(fs.readFileSync(p, "utf8"));
-  } catch {
-    return fallback;
-  }
-}
-
-function getNestedWeek(data, week) {
-  if (!data) return {};
-  return data[`week${week}`] || {};
-}
+const Card = require("../models/Card");
+const TestQuestion = require("../models/TestQuestion");
 
 function decodeBase64(dataUrl) {
   const m = /^data:([^;]+);base64,(.+)$/.exec(dataUrl || "");
@@ -33,26 +16,117 @@ function sanitizeName(name) {
     .slice(0, 120);
 }
 
-// ===== Cards/Tests text JSON =====
-exports.getCardsData = (req, res) => {
-  const week = Number(req.query.week) || 1;
-  const data = readJson("cards.json", {});
-  res.json(getNestedWeek(data, week));
+// ===== Cards (text data) =====
+exports.getCardsData = async (req, res) => {
+  try {
+    const week = Number(req.query.week) || 1;
+    const cards = await Card.find({ week })
+      .sort({ number: 1 })
+      .select("number front back");
+    const out = {};
+    for (const c of cards) {
+      out[`card${c.number}`] = { front: c.front, back: c.back };
+    }
+    res.json(out);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
 };
 
-exports.getTestQuestions = (req, res) => {
-  const week = Number(req.query.week) || 1;
-  const data = readJson("testQuestions.json", {});
-  res.json(getNestedWeek(data, week));
+// ===== Test questions (text data) =====
+exports.getTestQuestions = async (req, res) => {
+  try {
+    const week = Number(req.query.week) || 1;
+    const qs = await TestQuestion.find({ week })
+      .sort({ number: 1 })
+      .select("number question answers hint correct");
+    const out = {};
+    for (const q of qs) {
+      out[`question${q.number}`] = {
+        question: q.question,
+        answers: q.answers,
+        hint: q.hint,
+        correct: q.correct,
+      };
+    }
+    res.json(out);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
 };
 
-// ===== Infographics (MongoDB) =====
+// ===== Card images (stream from DB) =====
+exports.listCardImages = async (req, res) => {
+  try {
+    const week = Number(req.query.week) || 1;
+    const cards = await Card.find({ week })
+      .sort({ number: 1 })
+      .select("number");
+    const result = cards.map((c) => ({
+      number: c.number,
+      week,
+      front: `/api/content/cards/${week}/${c.number}/front`,
+      back: `/api/content/cards/${week}/${c.number}/back`,
+    }));
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+};
+
+exports.streamCardImage = async (req, res) => {
+  try {
+    const week = Number(req.params.week);
+    const number = Number(req.params.number);
+    const side = req.params.side === "back" ? "backImage" : "frontImage";
+    const card = await Card.findOne({ week, number });
+    const img = card && card[side];
+    if (!img || !img.data) return res.status(404).end();
+    res.setHeader("Content-Type", img.mimeType || "image/png");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.send(img.data);
+  } catch (e) {
+    res.status(500).end();
+  }
+};
+
+// ===== Test images (stream from DB) =====
+exports.listTestImages = async (req, res) => {
+  try {
+    const week = Number(req.query.week) || 1;
+    const qs = await TestQuestion.find({ week })
+      .sort({ number: 1 })
+      .select("number");
+    const result = qs.map((q) => ({
+      number: q.number,
+      week,
+      url: `/api/content/test-images/${week}/${q.number}`,
+    }));
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+};
+
+exports.streamTestImage = async (req, res) => {
+  try {
+    const week = Number(req.params.week);
+    const number = Number(req.params.number);
+    const q = await TestQuestion.findOne({ week, number });
+    if (!q || !q.image || !q.image.data) return res.status(404).end();
+    res.setHeader("Content-Type", q.image.mimeType || "image/png");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.send(q.image.data);
+  } catch (e) {
+    res.status(500).end();
+  }
+};
+
+// ===== Infographics =====
 exports.listInfographics = async (req, res) => {
   try {
     const week = Number(req.query.week) || 1;
-    const docs = await Infographic.find({ week })
-      .select("-data")
-      .sort({ name: 1 });
+    const docs = await Infographic.find({ week }).select("-data").sort({ name: 1 });
     res.json(
       docs.map((d) => ({
         id: d._id,
@@ -126,13 +200,11 @@ exports.deleteInfographic = async (req, res) => {
   }
 };
 
-// ===== Presentations (MongoDB) =====
+// ===== Presentations =====
 exports.listPresentations = async (req, res) => {
   try {
     const week = Number(req.query.week) || 1;
-    const docs = await Presentation.find({ week })
-      .select("-data")
-      .sort({ name: 1 });
+    const docs = await Presentation.find({ week }).select("-data").sort({ name: 1 });
     res.json(
       docs.map((d) => ({
         id: d._id,
@@ -209,71 +281,15 @@ exports.deletePresentation = async (req, res) => {
   }
 };
 
-// ===== Cards/Test images (filesystem) =====
-exports.listCardImages = (req, res) => {
-  const week = Number(req.query.week) || 1;
-  const dir = path.join(UPLOADS, "cards", `week${week}`);
-  if (!fs.existsSync(dir)) return res.json([]);
-  const files = fs.readdirSync(dir);
-  const byNum = {};
-  for (const f of files) {
-    const m = f.match(/^([fb])_(\d+)\.png$/i);
-    if (!m) continue;
-    const side = m[1].toLowerCase();
-    const num = parseInt(m[2], 10);
-    byNum[num] = byNum[num] || {};
-    byNum[num][side === "f" ? "front" : "back"] = `/uploads/cards/week${week}/${f}`;
-  }
-  const result = Object.keys(byNum)
-    .map((n) => parseInt(n, 10))
-    .sort((a, b) => a - b)
-    .map((n) => ({ number: n, week, ...byNum[n] }));
-  res.json(result);
-};
-
-exports.listTestImages = (req, res) => {
-  const week = Number(req.query.week) || 1;
-  const dir = path.join(UPLOADS, "testQuestions", `week${week}`);
-  if (!fs.existsSync(dir)) return res.json([]);
-  const files = fs
-    .readdirSync(dir)
-    .filter((f) => /^q(\d+)\.png$/i.test(f))
-    .map((f) => {
-      const n = parseInt(f.match(/\d+/)[0], 10);
-      return { number: n, week, url: `/uploads/testQuestions/week${week}/${f}` };
-    })
-    .sort((a, b) => a.number - b.number);
-  res.json(files);
-};
-
 // ===== Weeks list =====
 exports.listWeeks = async (req, res) => {
   try {
-    const cards = readJson("cards.json", {});
-    const tests = readJson("testQuestions.json", {});
     const weeks = new Set();
-
-    for (const k of Object.keys(cards)) {
-      const m = k.match(/^week(\d+)$/);
-      if (m) weeks.add(parseInt(m[1], 10));
-    }
-    for (const k of Object.keys(tests)) {
-      const m = k.match(/^week(\d+)$/);
-      if (m) weeks.add(parseInt(m[1], 10));
-    }
-    for (const sub of ["cards", "testQuestions"]) {
-      const root = path.join(UPLOADS, sub);
-      if (!fs.existsSync(root)) continue;
-      for (const entry of fs.readdirSync(root)) {
-        const m = entry.match(/^week(\d+)$/);
-        if (m) weeks.add(parseInt(m[1], 10));
-      }
-    }
+    const cardWeeks = await Card.distinct("week");
+    const testWeeks = await TestQuestion.distinct("week");
     const infoWeeks = await Infographic.distinct("week");
     const presWeeks = await Presentation.distinct("week");
-    for (const w of infoWeeks) weeks.add(w);
-    for (const w of presWeeks) weeks.add(w);
-
+    for (const w of [...cardWeeks, ...testWeeks, ...infoWeeks, ...presWeeks]) weeks.add(w);
     if (weeks.size === 0) weeks.add(1);
     res.json([...weeks].sort((a, b) => a - b));
   } catch (error) {

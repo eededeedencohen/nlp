@@ -54,6 +54,13 @@
   z-index: 2;
 }
 
+/* On touch devices / mobile, pinch is the natural gesture — hide buttons */
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .pz-controls {
+    display: none;
+  }
+}
+
 .pz-controls button {
   border: none;
   background: rgba(255, 255, 255, 0.15);

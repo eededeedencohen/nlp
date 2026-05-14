@@ -75,7 +75,7 @@ function LearnPresentation() {
             </Document>
           </PinchZoom>
         </div>
-        <div style={viewerNav}>
+        <div className="pres-viewer-nav" style={viewerNav}>
           <button style={navBtn} onClick={goPrev} disabled={pageIndex === 0}>
             <Icon name="rightArrow" size={14} color="#fff" /> הקודם
           </button>
@@ -86,6 +86,11 @@ function LearnPresentation() {
             הבא <Icon name="leftArrow" size={14} color="#fff" />
           </button>
         </div>
+        <style>{`
+          @media (max-width: 768px), (hover: none) and (pointer: coarse) {
+            .pres-viewer-nav { display: none !important; }
+          }
+        `}</style>
       </div>
     );
   }
