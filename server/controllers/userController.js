@@ -1,6 +1,7 @@
 const User = require("../models/User");
 
 const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e || "");
+const isValidUsername = (u) => /^[a-zA-Z0-9._-]{2,30}$/.test(u || "");
 
 const getUsers = async (req, res) => {
   try {
@@ -21,22 +22,33 @@ const getUserById = async (req, res) => {
   }
 };
 
-// Admin creates a user
 const createUser = async (req, res) => {
   try {
-    const { name, email, password, role = "user" } = req.body;
+    const { name, username, email, password, role = "user" } = req.body;
     if (!name?.trim()) return res.status(400).json({ message: "שם הוא שדה חובה" });
-    if (!isValidEmail(email)) return res.status(400).json({ message: "כתובת אימייל לא תקינה" });
+    if (!isValidUsername(username)) {
+      return res.status(400).json({
+        message: "שם משתמש חייב להכיל 2-30 תווים (אותיות אנגליות, ספרות, נקודה, מקף, קו תחתון)",
+      });
+    }
+    if (email && !isValidEmail(email)) {
+      return res.status(400).json({ message: "כתובת אימייל לא תקינה" });
+    }
     if (!password || password.length < 4) {
       return res.status(400).json({ message: "סיסמה חייבת להכיל לפחות 4 תווים" });
     }
 
-    const exists = await User.findOne({ email: email.toLowerCase() });
-    if (exists) return res.status(400).json({ message: "כתובת אימייל זו כבר רשומה" });
+    const exists = await User.findOne({ username: username.toLowerCase().trim() });
+    if (exists) return res.status(400).json({ message: "שם משתמש זה כבר תפוס" });
+    if (email) {
+      const emailExists = await User.findOne({ email: email.toLowerCase().trim() });
+      if (emailExists) return res.status(400).json({ message: "אימייל זה כבר רשום" });
+    }
 
     const user = await User.create({
       name: name.trim(),
-      email: email.toLowerCase().trim(),
+      username: username.toLowerCase().trim(),
+      email: email ? email.toLowerCase().trim() : undefined,
       passwordHash: await User.hashPassword(password),
       role,
     });
@@ -48,12 +60,20 @@ const createUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const { name, email, role, password } = req.body;
+    const { name, username, email, role, password } = req.body;
     const update = {};
     if (name) update.name = name.trim();
-    if (email) {
-      if (!isValidEmail(email)) return res.status(400).json({ message: "אימייל לא תקין" });
-      update.email = email.toLowerCase().trim();
+    if (username) {
+      if (!isValidUsername(username)) {
+        return res.status(400).json({ message: "שם משתמש לא תקין" });
+      }
+      update.username = username.toLowerCase().trim();
+    }
+    if (email !== undefined) {
+      if (email && !isValidEmail(email)) {
+        return res.status(400).json({ message: "אימייל לא תקין" });
+      }
+      update.email = email ? email.toLowerCase().trim() : undefined;
     }
     if (role) update.role = role;
     if (password) update.passwordHash = await User.hashPassword(password);
@@ -81,14 +101,21 @@ const deleteUser = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: "אימייל וסיסמה נדרשים" });
+    // Accept either { identifier, password } or legacy { email, password }
+    const identifier = (req.body.identifier || req.body.email || req.body.username || "")
+      .toLowerCase()
+      .trim();
+    const password = req.body.password;
+    if (!identifier || !password) {
+      return res.status(400).json({ message: "נא להזין שם משתמש/אימייל וסיסמה" });
     }
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) return res.status(401).json({ message: "אימייל או סיסמה שגויים" });
+    const query = identifier.includes("@")
+      ? { email: identifier }
+      : { username: identifier };
+    const user = await User.findOne(query);
+    if (!user) return res.status(401).json({ message: "שם משתמש או סיסמה שגויים" });
     const ok = await user.verifyPassword(password);
-    if (!ok) return res.status(401).json({ message: "אימייל או סיסמה שגויים" });
+    if (!ok) return res.status(401).json({ message: "שם משתמש או סיסמה שגויים" });
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });

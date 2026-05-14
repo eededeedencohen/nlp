@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import Logo from "../components/Logo";
 
 function Login() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -14,13 +14,13 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!email.trim() || !password) {
-      setError("נא להזין אימייל וסיסמה");
+    if (!identifier.trim() || !password) {
+      setError("נא להזין שם משתמש/אימייל וסיסמה");
       return;
     }
     setLoading(true);
     try {
-      const user = await login(email.trim(), password);
+      const user = await login(identifier.trim(), password);
       navigate(user.role === "admin" ? "/admin" : "/learn");
     } catch (e) {
       setError(e?.response?.data?.message || "שגיאה בהתחברות");
@@ -43,15 +43,15 @@ function Login() {
 
         <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
           <label style={label}>
-            אימייל
+            שם משתמש או אימייל
             <input
-              type="email"
-              autoComplete="email"
+              type="text"
+              autoComplete="username"
               dir="ltr"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               style={input}
-              placeholder="name@example.com"
+              placeholder="username or email"
             />
           </label>
           <label style={label}>

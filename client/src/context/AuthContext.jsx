@@ -19,8 +19,8 @@ export const AuthProvider = ({ children }) => {
     else localStorage.removeItem(STORAGE_KEY);
   }, [currentUser]);
 
-  const login = async (email, password) => {
-    const data = await loginApi(email, password);
+  const login = async (identifier, password) => {
+    const data = await loginApi(identifier, password);
     setCurrentUser(data);
     return data;
   };

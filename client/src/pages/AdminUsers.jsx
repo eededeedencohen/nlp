@@ -5,7 +5,7 @@ import "./Admin.css";
 function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", username: "", email: "", password: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [resetTarget, setResetTarget] = useState(null);
@@ -28,16 +28,17 @@ function AdminUsers() {
   const handleAdd = async (e) => {
     e.preventDefault();
     setError("");
-    if (!form.name.trim() || !form.email.trim() || !form.password) return;
+    if (!form.name.trim() || !form.username.trim() || !form.password) return;
     setSaving(true);
     try {
       await userService.createUser({
         name: form.name.trim(),
-        email: form.email.trim(),
+        username: form.username.trim(),
+        email: form.email.trim() || undefined,
         password: form.password,
         role: "user",
       });
-      setForm({ name: "", email: "", password: "" });
+      setForm({ name: "", username: "", email: "", password: "" });
       await refresh();
     } catch (err) {
       setError(err?.response?.data?.message || err.message);
@@ -79,7 +80,15 @@ function AdminUsers() {
           <input
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="שם מלא"
+            placeholder="שם מלא (לתצוגה)"
+            className="admin-input"
+          />
+          <input
+            type="text"
+            dir="ltr"
+            value={form.username}
+            onChange={(e) => setForm({ ...form, username: e.target.value })}
+            placeholder="username (לכניסה למערכת)"
             className="admin-input"
           />
           <input
@@ -87,7 +96,7 @@ function AdminUsers() {
             dir="ltr"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            placeholder="email@example.com"
+            placeholder="email@example.com (אופציונלי)"
             className="admin-input"
           />
           <input
@@ -133,7 +142,8 @@ function AdminUsers() {
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 700, color: "#16284b" }}>{u.name}</div>
                     <div className="admin-muted" style={{ fontSize: 12, direction: "ltr", textAlign: "right" }}>
-                      {u.email}
+                      @{u.username}
+                      {u.email ? ` · ${u.email}` : ""}
                     </div>
                     <div className="admin-muted" style={{ fontSize: 11 }}>
                       {u.role === "admin" ? "מנהל" : "משתמש"} · נוצר{" "}
