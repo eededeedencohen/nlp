@@ -39,12 +39,13 @@ exports.getTestQuestions = async (req, res) => {
     const week = Number(req.query.week) || 1;
     const qs = await TestQuestion.find({ week })
       .sort({ number: 1 })
-      .select("number question answers hint correct");
+      .select("number question answers explanations hint correct");
     const out = {};
     for (const q of qs) {
       out[`question${q.number}`] = {
         question: q.question,
         answers: q.answers,
+        explanations: q.explanations,
         hint: q.hint,
         correct: q.correct,
       };

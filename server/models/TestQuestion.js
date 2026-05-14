@@ -1,5 +1,15 @@
 const mongoose = require("mongoose");
 
+const explanationsSubschema = new mongoose.Schema(
+  {
+    A: { type: String, default: "" },
+    B: { type: String, default: "" },
+    C: { type: String, default: "" },
+    D: { type: String, default: "" },
+  },
+  { _id: false }
+);
+
 const answersSubschema = new mongoose.Schema(
   {
     A: { type: String, default: "" },
@@ -25,6 +35,7 @@ const testQuestionSchema = new mongoose.Schema(
     number: { type: Number, required: true },
     question: { type: String, default: "" },
     answers: { type: answersSubschema, default: () => ({}) },
+    explanations: { type: explanationsSubschema, default: () => ({}) },
     hint: { type: String, default: "" },
     correct: { type: String, enum: ["A", "B", "C", "D"], default: "A" },
     image: { type: imageSubschema, default: () => ({}) },

@@ -333,11 +333,29 @@ function LearnTest() {
         })}
 
         {answers[q.number] && (
-          <div style={feedbackBox(answers[q.number] === q.correct)}>
-            {answers[q.number] === q.correct
-              ? "✓ תשובה נכונה! כל הכבוד"
-              : `✗ תשובה שגויה. התשובה הנכונה: ${q.correct}`}
-          </div>
+          <>
+            <div style={feedbackBox(answers[q.number] === q.correct)}>
+              {answers[q.number] === q.correct
+                ? "✓ תשובה נכונה! כל הכבוד"
+                : `✗ תשובה שגויה. התשובה הנכונה: ${q.correct}`}
+            </div>
+            {q.explanations?.[answers[q.number]] && (
+              <div style={explanationBox}>
+                <div style={explanationTitle}>
+                  💡 הסבר לתשובה {answers[q.number]} (שבחרת)
+                </div>
+                <div>{q.explanations[answers[q.number]]}</div>
+              </div>
+            )}
+            {answers[q.number] !== q.correct && q.explanations?.[q.correct] && (
+              <div style={{ ...explanationBox, background: "#dcf5e6", borderColor: "#2eb872" }}>
+                <div style={{ ...explanationTitle, color: "#1a6b3f" }}>
+                  ✓ למה {q.correct} היא התשובה הנכונה
+                </div>
+                <div>{q.explanations[q.correct]}</div>
+              </div>
+            )}
+          </>
         )}
 
         <button
@@ -469,6 +487,24 @@ const feedbackBox = (ok) => ({
   color: ok ? "#1a6b3f" : "#8a2e13",
   textAlign: "center",
 });
+
+const explanationBox = {
+  marginTop: 10,
+  padding: "12px 14px",
+  borderRadius: 12,
+  fontSize: 14,
+  lineHeight: 1.55,
+  background: "#fff8d6",
+  border: "1px solid #f7c90c",
+  color: "#0b1c3b",
+};
+
+const explanationTitle = {
+  fontWeight: 800,
+  marginBottom: 6,
+  color: "#16284b",
+  fontSize: 13,
+};
 
 const hintBtn = {
   marginTop: 6,
